@@ -1,0 +1,25 @@
+# Electron Packaged Files & Binaries
+MyApp.exe
+*.exe
+*.dll
+*.pak
+*.dat
+*.bin
+locales/
+
+# Node Modules
+node_modules/
+package-lock.json
+
+# Maven & Java Build Targets
+backend/target/
+.maven-temp/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs & temp files
+*.log
+*.tmp

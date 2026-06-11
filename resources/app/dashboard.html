@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            background-image: url(dashboard.jpg);
+            background-repeat: no-repeat;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6a0dad;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+        }
+
+        nav ul li {
+            display: inline;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: black;
+            font-weight: 500;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 20px;
+            text-align: center;
+            margin-left: 450px;
+        }
+
+        .add-new {
+            margin: 20px 0;
+        }
+
+        .add-new button {
+            background: #6a0dad;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-left: 196px;
+        }
+
+        .add-new button:hover {
+            background: #5a0cab;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 400px;
+            position: relative;
+            text-align: left;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body input,
+        .modal-body textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .modal-footer {
+            text-align: right;
+        }
+
+        .modal-footer button {
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cancel {
+            background: gray;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .start {
+            background: #6a0dad;
+            color: white;
+            border-radius: 5px;
+        }
+        nav ul li a.active {
+            color: #6a0dad;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">MockMate-AI</div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html" class="active">Dashboard</a></li>
+                <li><a href="how.html">How it Works?</a></li>
+                <li><a href="contactus.html">Contact us</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <h1 style="margin-left: 190px;">Dashboard</h1>
+        <p style="margin-left: 190px;">Create and Start your AI Mockup Interview</p>
+
+        <div class="add-new">
+            <button id="openModal">+ Add New</button>
+        </div>
+    </main>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tell us more about your job interview</h2>
+                <span class="close" id="closeModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Job Role/Job Position</p>
+                <input type="text" id="modalJobRole" placeholder="Ex. Full Stack Developer"
+                    style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;">
+
+                <p>Job Description/Tech Stack (In Short)</p>
+                <textarea id="modalTechStack" placeholder="Ex. React, Angular, Node.js, MySQL etc"
+                    style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;"></textarea>
+
+                <p>Years of Experience</p>
+                <input type="text" id="modalExperience" placeholder="Ex. 5"
+                    style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;">
+            </div>
+            <div class="modal-footer">
+                <button class="cancel" id="closeModalBtn">Cancel</button>
+                <button class="start" id="startInterviewBtn">Start Interview</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('modal');
+        const openModalBtn = document.getElementById('openModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const closeModalFooter = document.getElementById('closeModalBtn');
+        const startInterviewBtn = document.getElementById('startInterviewBtn');
+
+        openModalBtn.onclick = () => {
+            modal.style.display = 'flex';
+        }
+
+        closeModalBtn.onclick = () => {
+            modal.style.display = 'none';
+        }
+
+        closeModalFooter.onclick = () => {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        startInterviewBtn.onclick = async () => {
+            const jobRole = document.getElementById('modalJobRole').value.trim();
+            const techStack = document.getElementById('modalTechStack').value.trim();
+            const experience = document.getElementById('modalExperience').value.trim();
+
+            if (!jobRole || !techStack || !experience) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            const userId = localStorage.getItem('userId') || 1;
+
+            try {
+                startInterviewBtn.innerText = "Loading...";
+                startInterviewBtn.disabled = true;
+
+                const response = await fetch('http://localhost:8080/api/interviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId: parseInt(userId), jobRole, techStack, experience })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to create interview session");
+                }
+
+                const data = await response.json();
+                
+                // Redirect with the interviewId
+                window.location.href = `interview.html?interviewId=${data.interviewId}&jobRole=${encodeURIComponent(jobRole)}&techStack=${encodeURIComponent(techStack)}&experience=${encodeURIComponent(experience)}`;
+            } catch (error) {
+                console.error("Error creating interview:", error);
+                alert("Failed to connect to the backend. Make sure the Spring Boot server is running.");
+                startInterviewBtn.innerText = "Start Interview";
+                startInterviewBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Form</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 30px;
+            width: 100%;
+            box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #6a0dad;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+        }
+
+        nav ul li {
+            display: inline;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: black;
+            font-weight: 500;
+        }
+
+        nav ul li a.active {
+            color: #6a0dad;
+            font-weight: bold;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f8f8f8;
+        }
+        .container {
+            display: flex;
+            width: 800px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .form-section {
+            background: linear-gradient(135deg,  rgb(49, 12, 64), rgb(49, 12, 64));
+            color: white;
+            padding: 40px;
+            flex: 1;
+        }
+        .form-section h2 {
+            margin-bottom: 20px;
+        }
+        .form-section input, .form-section textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+        }
+        .form-section textarea {
+            height: 80px;
+        }
+        .form-section button {
+            background: #6a0dad;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .contact-section {
+            padding: 40px;
+            flex: 1;
+        }
+        .contact-section h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .contact-section p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .contact-section div {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            color: #666;
+        }
+        .contact-section div i {
+            margin-right: 10px;
+            color: #ff007f;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">MockMate-AI</div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="how.html">How it Works?</a></li>
+                <li><a href="contactus.html" class="active">Contact us</a></li>
+            </ul>
+        </nav>
+    </header>
+    <div class="container">
+        <div class="form-section">
+            <h2>Send us a message</h2>
+            <input type="text" placeholder="Name">
+            <input type="email" placeholder="Email">
+            <input type="text" placeholder="Subject">
+            <textarea placeholder="Message"></textarea>
+            <button>Send Message</button>
+        </div>
+        <div class="contact-section" style="background-color: #eedddd;">
+            <h2>Contact us</h2>
+            <p>We're open for any suggestion or just to have a chat.</p>
+            <div><i class="fas fa-map-marker-alt"></i>📌Address: Jhulelal Institute Of Technology, Off koradi road Lonara , Nagpur-441111</div>
+            <div><i class="fas fa-phone"></i>📞 Phone: +1235 2355 98</div>
+            <div><i class="fas fa-envelope"></i>📧 Email: MockMate.ai@gmail.com</div>
+            <div><i class="fas fa-globe"></i> 🌐Website: mockmateai.com</div>
+        </div>
+    </div>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>
