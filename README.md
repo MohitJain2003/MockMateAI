@@ -63,3 +63,7 @@ MockMateAI/
     ├── script.js                  # Frontend API client logic
     └── style.css                  # UI styling and slide animations
 ```
+## Future Plans
+- More model integrations
+- Better UI/UX
+- Advanced analytics
