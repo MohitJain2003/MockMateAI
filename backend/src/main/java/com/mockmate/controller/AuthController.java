@@ -2,9 +2,14 @@ package com.mockmate.controller;
 
 import com.mockmate.entity.User;
 import com.mockmate.repository.UserRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,8 +23,10 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         Map<String, Object> response = new HashMap<>();
 
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -35,7 +42,7 @@ public class AuthController {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword()); // In a real production app we would hash passwords
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(user);
 
@@ -46,7 +53,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         Map<String, Object> response = new HashMap<>();
 
         Optional<User> userOpt = userRepository.findByUsername(request.getUsername());
@@ -54,7 +61,7 @@ public class AuthController {
             userOpt = userRepository.findByEmail(request.getUsername());
         }
 
-        if (userOpt.isEmpty() || !userOpt.get().getPassword().equals(request.getPassword())) {
+        if (userOpt.isEmpty() || !passwordEncoder.matches(request.getPassword(), userOpt.get().getPassword())) {
             response.put("error", "Invalid username/email or password");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
@@ -67,8 +74,16 @@ public class AuthController {
     }
 
     public static class RegisterRequest {
+        @NotBlank(message = "Username is required")
+        @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
         private String username;
+
+        @NotBlank(message = "Email is required")
+        @Email(message = "Email must be valid")
         private String email;
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
         private String password;
 
         public String getUsername() { return username; }
@@ -80,7 +95,10 @@ public class AuthController {
     }
 
     public static class LoginRequest {
+        @NotBlank(message = "Username or email is required")
         private String username;
+
+        @NotBlank(message = "Password is required")
         private String password;
 
         public String getUsername() { return username; }

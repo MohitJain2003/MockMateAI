@@ -6,6 +6,10 @@ import com.mockmate.entity.InterviewQuestion;
 import com.mockmate.repository.InterviewAnswerRepository;
 import com.mockmate.repository.InterviewRepository;
 import com.mockmate.repository.InterviewQuestionRepository;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -30,16 +34,16 @@ public class InterviewController {
     @Autowired
     private InterviewAnswerRepository interviewAnswerRepository;
 
-    @Value("${google.search.api-key}")
+    @Value("${google.search.api-key:}")
     private String apiKey;
 
-    @Value("${google.search.cx}")
+    @Value("${google.search.cx:}")
     private String cx;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
     @PostMapping
-    public ResponseEntity<?> createInterview(@RequestBody CreateInterviewRequest request) {
+    public ResponseEntity<?> createInterview(@Valid @RequestBody CreateInterviewRequest request) {
         Interview interview = new Interview();
         interview.setUserId(request.getUserId());
         interview.setJobRole(request.getJobRole());
@@ -71,16 +75,26 @@ public class InterviewController {
     }
 
     @GetMapping("/{id}/questions")
-    public ResponseEntity<?> getQuestions(@PathVariable Long id) {
+    public ResponseEntity<?> getQuestions(@PathVariable Long id, @RequestParam Long userId) {
+        Optional<Interview> interviewOpt = interviewRepository.findById(id);
+        if (interviewOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!interviewOpt.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+        }
         List<InterviewQuestion> questions = interviewQuestionRepository.findByInterviewId(id);
         return ResponseEntity.ok(questions);
     }
 
     @PostMapping("/{id}/submit")
-    public ResponseEntity<?> submitAnswers(@PathVariable Long id, @RequestBody List<SubmitAnswerRequest> answersPayload) {
+    public ResponseEntity<?> submitAnswers(@PathVariable Long id, @RequestParam Long userId, @Valid @RequestBody List<SubmitAnswerRequest> answersPayload) {
         Optional<Interview> interviewOpt = interviewRepository.findById(id);
         if (interviewOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+        if (!interviewOpt.get().getUserId().equals(userId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         }
 
         Interview interview = interviewOpt.get();
@@ -119,18 +133,20 @@ public class InterviewController {
     private List<String> fetchQuestionsFromGoogle(String jobRole, String techStack, String experience) {
         List<String> questions = new ArrayList<>();
         try {
-            String searchQuery = String.format("%s %s %s interview questions", jobRole, techStack, experience);
-            String url = String.format("https://www.googleapis.com/customsearch/v1?q=%s&key=%s&cx=%s",
-                    URLEncoder.encode(searchQuery, StandardCharsets.UTF_8), apiKey, cx);
+            if (apiKey != null && !apiKey.isEmpty() && cx != null && !cx.isEmpty()) {
+                String searchQuery = String.format("%s %s %s interview questions", jobRole, techStack, experience);
+                String url = String.format("https://www.googleapis.com/customsearch/v1?q=%s&key=%s&cx=%s",
+                        URLEncoder.encode(searchQuery, StandardCharsets.UTF_8), apiKey, cx);
 
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response != null && response.containsKey("items")) {
-                List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
-                for (Map<String, Object> item : items) {
-                    if (item.containsKey("snippet")) {
-                        String snippet = (String) item.get("snippet");
-                        if (snippet != null && snippet.trim().length() > 20) {
-                            questions.add(snippet.replaceAll("\\s+", " ").trim());
+                Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+                if (response != null && response.containsKey("items")) {
+                    List<Map<String, Object>> items = (List<Map<String, Object>>) response.get("items");
+                    for (Map<String, Object> item : items) {
+                        if (item.containsKey("snippet")) {
+                            String snippet = (String) item.get("snippet");
+                            if (snippet != null && snippet.trim().length() > 20) {
+                                questions.add(snippet.replaceAll("\\s+", " ").trim());
+                            }
                         }
                     }
                 }
@@ -168,11 +184,11 @@ public class InterviewController {
         if (answeredCount == 0) return 0;
 
         int averageWords = totalWords / answeredCount;
-        int score = 50; 
+        int score = 50;
         if (averageWords > 20) score += 15;
         if (averageWords > 40) score += 20;
         if (answeredCount > 5) score += 15;
-        
+
         return Math.min(score, 100);
     }
 
@@ -194,9 +210,17 @@ public class InterviewController {
     }
 
     public static class CreateInterviewRequest {
+        @NotNull(message = "User ID is required")
         private Long userId;
+
+        @NotBlank(message = "Job role is required")
+        @Size(max = 200, message = "Job role must not exceed 200 characters")
         private String jobRole;
+
+        @Size(max = 500, message = "Tech stack must not exceed 500 characters")
         private String techStack;
+
+        @Size(max = 100, message = "Experience must not exceed 100 characters")
         private String experience;
 
         public Long getUserId() { return userId; }
@@ -210,7 +234,10 @@ public class InterviewController {
     }
 
     public static class SubmitAnswerRequest {
+        @NotNull(message = "Question ID is required")
         private Long questionId;
+
+        @Size(max = 5000, message = "Answer must not exceed 5000 characters")
         private String answerText;
 
         public Long getQuestionId() { return questionId; }
