@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; connect-src 'self' http://localhost:8080;">
     <title>Dashboard</title>
     <style>
         body {
@@ -113,6 +114,7 @@
             margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
+            box-sizing: border-box;
         }
 
         .modal-footer {
@@ -139,6 +141,13 @@
         nav ul li a.active {
             color: #6a0dad;
             font-weight: bold;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
         }
     </style>
 </head>
@@ -172,16 +181,14 @@
             </div>
             <div class="modal-body">
                 <p>Job Role/Job Position</p>
-                <input type="text" id="modalJobRole" placeholder="Ex. Full Stack Developer"
-                    style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;">
+                <input type="text" id="jobRoleInput" placeholder="Ex. Full Stack Developer" maxlength="200">
 
                 <p>Job Description/Tech Stack (In Short)</p>
-                <textarea id="modalTechStack" placeholder="Ex. React, Angular, Node.js, MySQL etc"
-                    style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;"></textarea>
+                <textarea id="techStackInput" placeholder="Ex. React, Angular, Node.js, MySQL etc" maxlength="500"></textarea>
 
                 <p>Years of Experience</p>
-                <input type="text" id="modalExperience" placeholder="Ex. 5"
-                    style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px;">
+                <input type="text" id="experienceInput" placeholder="Ex. 5" maxlength="100">
+                <div id="modalError" class="error-message"></div>
             </div>
             <div class="modal-footer">
                 <button class="cancel" id="closeModalBtn">Cancel</button>
@@ -191,14 +198,22 @@
     </div>
 
     <script>
+        // Check if user is logged in
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            window.location.href = 'index.html';
+        }
+
         const modal = document.getElementById('modal');
         const openModalBtn = document.getElementById('openModal');
         const closeModalBtn = document.getElementById('closeModal');
         const closeModalFooter = document.getElementById('closeModalBtn');
         const startInterviewBtn = document.getElementById('startInterviewBtn');
+        const modalError = document.getElementById('modalError');
 
         openModalBtn.onclick = () => {
             modal.style.display = 'flex';
+            modalError.style.display = 'none';
         }
 
         closeModalBtn.onclick = () => {
@@ -209,49 +224,28 @@
             modal.style.display = 'none';
         }
 
-        window.onclick = (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        }
+        startInterviewBtn.onclick = () => {
+            const jobRole = document.getElementById('jobRoleInput').value.trim();
+            const techStack = document.getElementById('techStackInput').value.trim();
+            const experience = document.getElementById('experienceInput').value.trim();
 
-        startInterviewBtn.onclick = async () => {
-            const jobRole = document.getElementById('modalJobRole').value.trim();
-            const techStack = document.getElementById('modalTechStack').value.trim();
-            const experience = document.getElementById('modalExperience').value.trim();
-
-            if (!jobRole || !techStack || !experience) {
-                alert("Please fill in all fields.");
+            if (!jobRole) {
+                modalError.textContent = 'Please enter a job role.';
+                modalError.style.display = 'block';
                 return;
             }
 
-            const userId = localStorage.getItem('userId') || 1;
+            // Store data in sessionStorage instead of URL parameters
+            sessionStorage.setItem('interview_jobRole', jobRole);
+            sessionStorage.setItem('interview_techStack', techStack);
+            sessionStorage.setItem('interview_experience', experience);
 
-            try {
-                startInterviewBtn.innerText = "Loading...";
-                startInterviewBtn.disabled = true;
+            window.location.href = "interview.html";
+        }
 
-                const response = await fetch('http://localhost:8080/api/interviews', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ userId: parseInt(userId), jobRole, techStack, experience })
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to create interview session");
-                }
-
-                const data = await response.json();
-                
-                // Redirect with the interviewId
-                window.location.href = `interview.html?interviewId=${data.interviewId}&jobRole=${encodeURIComponent(jobRole)}&techStack=${encodeURIComponent(techStack)}&experience=${encodeURIComponent(experience)}`;
-            } catch (error) {
-                console.error("Error creating interview:", error);
-                alert("Failed to connect to the backend. Make sure the Spring Boot server is running.");
-                startInterviewBtn.innerText = "Start Interview";
-                startInterviewBtn.disabled = false;
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
             }
         }
     </script>

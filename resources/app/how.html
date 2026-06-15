@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self';">
     <title>How It Works</title>
     <style>
         body {
@@ -115,6 +116,11 @@
     </style>
 </head>
 <body>
+    <script>
+        if (!sessionStorage.getItem('userId')) {
+            window.location.href = 'index.html';
+        }
+    </script>
     <header>
         <div class="logo">MockMate-AI</div>
         <nav>

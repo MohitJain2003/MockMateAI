@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self'; connect-src 'self' http://localhost:8080;">
     <title>Interview</title>
     <style>
               body {
@@ -126,6 +127,12 @@
             text-align: center;
             text-decoration: none;
         }
+
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -182,40 +189,87 @@
     </div>
 
     <script>
+        // Check if user is logged in
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+            window.location.href = 'index.html';
+        }
+
         let currentQuestionIndex = 0;
         let questions = [];
         let answers = [];
+        let interviewId = null;
 
-        // Retrieve data from URL parameters
-        const params = new URLSearchParams(window.location.search);
-        const interviewId = params.get("interviewId");
-        const jobRole = params.get("jobRole") || "Not Provided";
-        const techStack = params.get("techStack") || "Not Provided";
-        const experience = params.get("experience") || "Not Provided";
+        // Retrieve data from sessionStorage instead of URL parameters
+        const jobRole = sessionStorage.getItem("interview_jobRole") || "Not Provided";
+        const techStack = sessionStorage.getItem("interview_techStack") || "Not Provided";
+        const experience = sessionStorage.getItem("interview_experience") || "Not Provided";
 
+        // Safely set text content (prevents XSS)
         document.getElementById("jobRole").textContent = jobRole;
         document.getElementById("techStack").textContent = techStack;
         document.getElementById("experience").textContent = experience;
 
+        const API_BASE = 'http://localhost:8080';
+
+        // Helper: get CSRF token from cookie
+        function getCsrfToken() {
+            const cookies = document.cookie.split(';');
+            for (let c of cookies) {
+                const [name, value] = c.trim().split('=');
+                if (name === 'XSRF-TOKEN') {
+                    return decodeURIComponent(value);
+                }
+            }
+            return null;
+        }
+
         async function fetchQuestions() {
             try {
-                const response = await fetch(`http://localhost:8080/api/interviews/${interviewId}/questions`);
-                if (!response.ok) {
-                    throw new Error("Failed to load questions");
+                const csrfToken = getCsrfToken();
+
+                // Create interview via backend API (API key stays server-side)
+                const createResponse = await fetch(`${API_BASE}/api/interviews`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {})
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        userId: parseInt(userId, 10),
+                        jobRole: jobRole,
+                        techStack: techStack,
+                        experience: experience
+                    })
+                });
+
+                if (!createResponse.ok) {
+                    const err = await createResponse.json();
+                    alert(err.error || "Failed to create interview.");
+                    return;
                 }
-                questions = await response.json();
-                answers = new Array(questions.length).fill("");
-                displayQuestion(0);
+
+                const data = await createResponse.json();
+                interviewId = data.interviewId;
+
+                if (data.questions && data.questions.length > 0) {
+                    questions = data.questions.map(q => q.questionText);
+                    answers = new Array(questions.length).fill("");
+                    displayQuestion(0);
+                } else {
+                    alert("No questions found for this criteria.");
+                }
             } catch (error) {
                 console.error("Error fetching questions:", error);
-                alert("Failed to load questions from backend. Make sure the Spring Boot server is running.");
+                alert("Failed to load questions. Please make sure the backend is running.");
             }
         }
 
         // Display Question
         function displayQuestion(index) {
             if (index >= 0 && index < questions.length) {
-                document.getElementById("questionText").textContent = `Q${index + 1}: ${questions[index].questionText}`;
+                document.getElementById("questionText").textContent = `Q${index + 1}: ${questions[index]}`;
                 document.getElementById("spokenAnswer").textContent = answers[index] || "";
                 currentQuestionIndex = index;
 
@@ -227,10 +281,10 @@
 
         // Event Listeners
         document.getElementById("startInterview").addEventListener("click", function () {
-            document.getElementById("jobDetails").style.display = "none"; // Hide job details section
-            document.getElementById("startInterview").style.display = "none"; // Hide start interview button
-            document.querySelector(".info-box").style.display = "none"; // Hide info box
-            document.getElementById("questionContainer").style.display = "block"; // Show question section
+            document.getElementById("jobDetails").style.display = "none";
+            document.getElementById("startInterview").style.display = "none";
+            document.querySelector(".info-box").style.display = "none";
+            document.getElementById("questionContainer").style.display = "block";
             fetchQuestions();
         });
 
@@ -245,40 +299,41 @@
         });
 
         document.getElementById("submitAnswers").addEventListener("click", async function () {
-            answers[currentQuestionIndex] = document.getElementById("spokenAnswer").textContent;
+            if (!interviewId) {
+                alert("Interview not initialized. Please try again.");
+                return;
+            }
 
-            const submitPayload = questions.map((q, idx) => ({
-                questionId: q.id,
+            const csrfToken = getCsrfToken();
+
+            // Build answer payload with question IDs
+            const answerPayload = questions.map((_, idx) => ({
+                questionId: idx + 1,
                 answerText: answers[idx] || ""
             }));
 
             try {
-                const submitButton = document.getElementById("submitAnswers");
-                submitButton.innerText = "Submitting...";
-                submitButton.disabled = true;
-
-                const response = await fetch(`http://localhost:8080/api/interviews/${interviewId}/submit`, {
+                const response = await fetch(`${API_BASE}/api/interviews/${interviewId}/submit?userId=${encodeURIComponent(userId)}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {})
                     },
-                    body: JSON.stringify(submitPayload)
+                    credentials: 'include',
+                    body: JSON.stringify(answerPayload)
                 });
 
                 if (!response.ok) {
-                    throw new Error("Submission failed");
+                    const err = await response.json();
+                    alert(err.error || "Failed to submit answers.");
+                    return;
                 }
 
                 const result = await response.json();
-                
                 alert(`Interview completed!\nScore: ${result.score}/100\n\n${result.feedback}`);
-                window.location.href = "dashboard.html";
             } catch (error) {
                 console.error("Error submitting answers:", error);
-                alert("Failed to submit answers to backend.");
-                const submitButton = document.getElementById("submitAnswers");
-                submitButton.innerText = "Submit Answers";
-                submitButton.disabled = false;
+                alert("Failed to submit answers. Please try again.");
             }
         });
 
@@ -312,10 +367,16 @@
             document.getElementById("enableWebcam").style.display = "block";
         });
 
-        // Speech Recognition
+        // Speech Recognition with standard API + webkit fallback
         let recognition;
         document.getElementById("tapToSpeak").addEventListener("click", function () {
-            recognition = new webkitSpeechRecognition();
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Speech recognition is not supported in this browser.");
+                return;
+            }
+
+            recognition = new SpeechRecognition();
             recognition.lang = "en-US";
             recognition.onresult = function (event) {
                 const spokenText = event.results[0][0].transcript;
@@ -330,11 +391,18 @@
                 document.getElementById("tapToSpeak").style.display = "block";
                 document.getElementById("stopSpeaking").style.display = "none";
             };
+            recognition.onerror = function (event) {
+                console.error("Speech recognition error:", event.error);
+                document.getElementById("tapToSpeak").style.display = "block";
+                document.getElementById("stopSpeaking").style.display = "none";
+            };
             recognition.start();
         });
 
         document.getElementById("stopSpeaking").addEventListener("click", function () {
-            recognition.stop();
+            if (recognition) {
+                recognition.stop();
+            }
         });
     </script>
 </body>
